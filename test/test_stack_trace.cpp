@@ -9,7 +9,7 @@ void collect_trace() {
     StackTrace st;
     st.load_here(32);
 
-    Printer p(true, true, true);
+    Printer p;
     std::ostringstream oss;
     p.print(st, oss);
     std::cout << oss.str() << std::endl;

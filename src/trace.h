@@ -99,13 +99,20 @@ public:
         size_t trace_cnt = backtrace(&stack_trace_vec_[0], stack_trace_vec_.size());
         stack_trace_vec_.resize(trace_cnt);
         set_skip_count(1);
+
+        // std::cout << "stack_trace_vec, size: " <<  stack_trace_vec_.size() << std::endl;
+        // int count = 0;
+        // for (const auto& x : stack_trace_vec_) {
+        //     std::cout << "#" << count++ << "  " << x << std::endl;
+        // }
+        // std::cout << "stack_trace size: " << size() << std::endl;
+        // std::cout << std::endl;
+
         return size();
     }
 };
 
-class StackTrace : public StackTraceImpl {
-
-};
+class StackTrace : public StackTraceImpl {};
 
 }  // namespace stack_trace
 

@@ -156,8 +156,7 @@ public:
 
 protected:
     std::string demangle(const char* funcname) {
-        return "";
-        // return demangler_.demangle(funcname);
+        return demangler_.demangle(funcname);
     }
 
 private:
@@ -187,7 +186,7 @@ private:
     }
 
 private:
-    // demangler demangler_;
+    utils::demangler demangler_;
     std::string argv0_;
     std::string exec_path_;
 };

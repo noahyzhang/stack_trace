@@ -12,6 +12,7 @@
 #ifndef SRC_UTILS_H_
 #define SRC_UTILS_H_
 
+#include <cxxabi.h>
 #include <string>
 #include <unordered_map>
 
@@ -136,6 +137,24 @@ public:
 private:
     T val_;
     bool empty_;
+};
+
+class demangler {
+public:
+
+public:
+    std::string demangle(const char* func_name) {
+        char* result = abi::__cxa_demangle(func_name, demangle_buf_.get(), &demangle_buf_len_, nullptr);
+        if (result) {
+            demangle_buf_.update(result);
+            return result;
+        }
+        return func_name;
+    }
+
+private:
+    handle<char*> demangle_buf_;
+    size_t demangle_buf_len_{0};
 };
 
 }  // namespace utils

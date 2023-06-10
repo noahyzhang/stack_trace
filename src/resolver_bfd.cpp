@@ -21,8 +21,8 @@ static void print_strace(const ResolvedTrace& trace) {
 }
 
 ResolvedTrace BFDTraceResolver::resolve(ResolvedTrace trace) {
-    std::cout << "old trace: " << std::endl;
-    print_strace(trace);
+    // std::cout << "old trace: " << std::endl;
+    // print_strace(trace);
 
     Dl_info symbol_info;
     if (!dladdr(trace.addr_, &symbol_info)) {
@@ -54,6 +54,17 @@ ResolvedTrace BFDTraceResolver::resolve(ResolvedTrace trace) {
     find_sym_result* details_selected;
     find_sym_result details_call_site = find_symbol_details(file_obj, trace.addr_, symbol_info.dli_fbase);
     details_selected = &details_call_site;
+
+    find_sym_result details_adjusted_call_site = find_symbol_details(
+        file_obj, (void*)(uintptr_t(trace.addr_)-1), symbol_info.dli_fbase);
+    if (details_call_site.found && details_adjusted_call_site.found) {
+        details_selected = &details_adjusted_call_site;
+        trace.addr_ = (void*)(uintptr_t(trace.addr_)-1);
+    }
+    if (details_selected == &details_call_site && details_call_site.found) {
+        details_call_site = find_symbol_details(file_obj, trace.addr_, symbol_info.dli_fbase);
+    }
+
     if (details_selected->found) {
         if (details_selected->filename) {
             trace.source_loc_.filename_ = details_selected->filename;
@@ -68,8 +79,8 @@ ResolvedTrace BFDTraceResolver::resolve(ResolvedTrace trace) {
         trace.source_loc_vec_ = get_backtrace_source_loc_vec(file_obj, *details_selected);
     }
 
-    std::cout << "new trace: " << std::endl;
-    print_strace(trace);
+    // std::cout << "new trace: " << std::endl;
+    // print_strace(trace);
     return trace;
 }
 

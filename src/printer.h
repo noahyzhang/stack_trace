@@ -24,7 +24,7 @@ namespace stack_trace {
 class Printer {
 public:
     Printer() = default;
-    explicit Printer(bool is_address = false, bool is_object = false, bool is_reverse = true) {}
+    explicit Printer(bool is_address, bool is_object, bool is_reverse) {}
     ~Printer() = default;
     Printer(const Printer&) = delete;
     Printer& operator=(const Printer&) = delete;
@@ -51,6 +51,7 @@ private:
     void print_stacktrace(ST& st, std::ostream& os) {
         print_header(os, st.get_thread_id());
         resolver_.load_stacktrace(st);
+        // std::cout << "ST size: " << st.size() << std::endl;
         if (is_reverse_) {
             for (size_t trace_idx = st.size(); trace_idx > 0; --trace_idx) {
                 print_trace(os, resolver_.resolve(st[trace_idx-1]));
@@ -116,8 +117,8 @@ private:
 private:
     TraceResolver resolver_;
 
-    bool is_address_{false};
-    bool is_object_{false};
+    bool is_address_{true};
+    bool is_object_{true};
     bool is_reverse_{true};
     // bool is_snippet_{true};
 
