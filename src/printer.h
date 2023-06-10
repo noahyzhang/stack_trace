@@ -16,6 +16,7 @@
 #include <ostream>
 #include <iomanip>
 #include "resolver.h"
+#include "resolver_base.h"
 #include "file_stream.h"
 
 namespace stack_trace {
@@ -64,7 +65,7 @@ private:
     void print_header(std::ostream& os, size_t thread_id) {
         os << "Stack trace";
         if (thread_id != 0) {
-            os << " in thread" << thread_id;
+            os << " in thread " << thread_id;
         }
         os << ":\n";
     }
@@ -80,10 +81,10 @@ private:
     }
 
     void print_trace(std::ostream& os, const ResolvedTrace& trace) {
-        os << "#" << std::left << std::setw(2) << trace.get_idx() << std::right;
+        os << "#" << std::left << std::setw(2) << trace.idx_ << std::right;
         bool already_indented = true;
         if (!trace.source_loc_.filename_.size() || is_object_) {
-            os << "   Object \"" << trace.object_filename_ << "\", at " << trace.get_addr()
+            os << "   Object \"" << trace.object_filename_ << "\", at " << trace.addr_
             << ", in " << trace.object_function_ << "\n";
             already_indented = false;
         }
@@ -102,7 +103,7 @@ private:
             if (!already_indented) {
                 os << "   ";
             }
-            print_source_loc(os, "   ", trace.source_loc_, trace.get_addr());
+            print_source_loc(os, "   ", trace.source_loc_, trace.addr_);
             // if (is_snippet_) {
             //     print_snippet(os, "      ", trace.source_loc_, trace_context_size);
             // }

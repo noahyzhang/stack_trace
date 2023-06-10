@@ -5,18 +5,29 @@
 
 using namespace stack_trace;
 
-int main() {
+void collect_trace() {
     StackTrace st;
     st.load_here(32);
-
-    for (const auto& x : st.stack_trace_vec_) {
-        std::cout << x << std::endl;
-    }
 
     Printer p(true, true, true);
     std::ostringstream oss;
     p.print(st, oss);
-
     std::cout << oss.str() << std::endl;
+}
+
+void func_03() {
+    collect_trace();
+}
+
+void func_02() {
+    func_03();
+}
+
+void func_01() {
+    func_02();
+}
+
+int main() {
+    func_01();
     return 0;
 }

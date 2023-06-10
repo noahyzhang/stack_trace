@@ -3,13 +3,29 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <utility>
+#include <iostream>
 #include "resolver_bfd.h"
 
 namespace stack_trace {
 
+static void print_strace(const ResolvedTrace& trace) {
+    std::cout << "trace: " << " addr: " << trace.addr_ << ", idx: " << trace.idx_
+        << ", obj_filename: " << trace.object_filename_ << ", obj_function: " << trace.object_function_
+        << ",  outer source loc: " << trace.source_loc_.filename_ << " " << trace.source_loc_.function_ << " "
+        << trace.source_loc_.col_ << " " << trace.source_loc_.line_ << std::endl;
+    for (const auto& x : trace.source_loc_vec_) {
+        std::cout << "inner source loc: " << x.filename_ << " "
+            << x.function_ << " " << x.col_ << " " << x.line_ << std::endl;
+    }
+    std::cout << std::endl;
+}
+
 ResolvedTrace BFDTraceResolver::resolve(ResolvedTrace trace) {
+    std::cout << "old trace: " << std::endl;
+    print_strace(trace);
+
     Dl_info symbol_info;
-    if (!dladdr(trace.get_addr(), &symbol_info)) {
+    if (!dladdr(trace.addr_, &symbol_info)) {
         return trace;
     }
     if (symbol_info.dli_sname) {
@@ -36,7 +52,7 @@ ResolvedTrace BFDTraceResolver::resolve(ResolvedTrace trace) {
         }
     }
     find_sym_result* details_selected;
-    find_sym_result details_call_site = find_symbol_details(file_obj, trace.get_addr(), symbol_info.dli_fbase);
+    find_sym_result details_call_site = find_symbol_details(file_obj, trace.addr_, symbol_info.dli_fbase);
     details_selected = &details_call_site;
     if (details_selected->found) {
         if (details_selected->filename) {
@@ -51,6 +67,9 @@ ResolvedTrace BFDTraceResolver::resolve(ResolvedTrace trace) {
         }
         trace.source_loc_vec_ = get_backtrace_source_loc_vec(file_obj, *details_selected);
     }
+
+    std::cout << "new trace: " << std::endl;
+    print_strace(trace);
     return trace;
 }
 

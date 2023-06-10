@@ -68,11 +68,11 @@ public:
     size_t size() const {
         return (stack_trace_vec_.size() > get_skip_count()) ? stack_trace_vec_.size() - get_skip_count() : 0;
     }
-    Trace operator[](size_t idx) const {
+    ResolvedTrace operator[](size_t idx) const {
         if (idx >= size()) {
-            return Trace();
+            return ResolvedTrace();
         }
-        return Trace(stack_trace_vec_[idx + get_skip_count()], idx);
+        return ResolvedTrace(stack_trace_vec_[idx + get_skip_count()], idx);
     }
     void* const* begin() const {
         if (size()) {

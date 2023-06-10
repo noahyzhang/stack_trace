@@ -18,59 +18,64 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <fstream>
 #include "utils.h"
 
 namespace stack_trace {
 
-class Trace {
-public:
-    Trace() = default;
-    Trace(void* addr, size_t idx) : addr_(addr), idx_(idx) {}
-    ~Trace() = default;
-    Trace(const Trace&) = delete;
-    Trace& operator=(const Trace&) = delete;
-    Trace(Trace&& other) {
-        addr_ = other.addr_;
-        idx_ = other.idx_;
-    }
-    Trace& operator=(Trace&& other) {
-        addr_ = other.addr_;
-        idx_ = other.idx_;
-    }
+// class Trace {
+// public:
+//     Trace() = default;
+//     Trace(void* addr, size_t idx) : addr_(addr), idx_(idx) {}
+//     ~Trace() = default;
+//     Trace(const Trace&) = delete;
+//     Trace& operator=(const Trace&) = delete;
+//     Trace(Trace&& other) {
+//         addr_ = other.addr_;
+//         idx_ = other.idx_;
+//     }
+//     Trace& operator=(Trace&& other) {
+//         addr_ = other.addr_;
+//         idx_ = other.idx_;
+//     }
 
-public:
-    void* get_addr() const {
-        return addr_;
-    }
+// public:
+//     void* get_addr() const {
+//         return addr_;
+//     }
 
-    size_t get_idx() const {
-        return idx_;
-    }
+//     size_t get_idx() const {
+//         return idx_;
+//     }
 
-private:
-    void* addr_{nullptr};
-    size_t idx_{0};
-};
+// private:
+//     void* addr_{nullptr};
+//     size_t idx_{0};
+// };
 
-class ResolvedTrace : public Trace {
+class ResolvedTrace {
 public:
     ResolvedTrace() = default;
+    ResolvedTrace(void* addr, size_t idx) : addr_(addr), idx_(idx) {}
     ~ResolvedTrace() = default;
     ResolvedTrace(const ResolvedTrace&) = delete;
     ResolvedTrace& operator=(const ResolvedTrace&) = delete;
-    ResolvedTrace(ResolvedTrace&& other) : Trace(std::move(other)) {
+    ResolvedTrace(ResolvedTrace&& other) {
         object_filename_.swap(other.object_filename_);
         object_function_.swap(other.object_function_);
         source_loc_ = std::move(other.source_loc_);
         source_loc_vec_.swap(other.source_loc_vec_);
+        addr_ = other.addr_;
+        idx_ = other.idx_;
     }
     ResolvedTrace& operator=(ResolvedTrace&& other) {
         if (this != &other) {
-            Trace::operator=(std::move(other));
             object_filename_.swap(other.object_filename_);
             object_function_.swap(other.object_function_);
             source_loc_ = std::move(other.source_loc_);
             source_loc_vec_.swap(other.source_loc_vec_);
+            addr_ = other.addr_;
+            idx_ = other.idx_;
         }
     }
 
@@ -116,11 +121,13 @@ public:
     std::string object_function_;
     SourceLoc source_loc_;
     std::vector<SourceLoc> source_loc_vec_;
+    void* addr_{nullptr};
+    size_t idx_{0};
 };
 
 class TraceResolverImplBase {
 public:
-    TraceResolverImplBase() = default;
+    TraceResolverImplBase() : argv0_(get_argv0()), exec_path_(read_symlink("/proc/self/exe")) {}
     ~TraceResolverImplBase() = default;
 
 public:
@@ -139,13 +146,44 @@ public:
     }
 
     std::string resolve_exec_path(Dl_info* dl_info) const {
-
+        if (dl_info->dli_fname == argv0_) {
+            dl_info->dli_fname = "/proc/self/exe";
+            return exec_path_;
+        } else {
+            return dl_info->dli_fname;
+        }
     }
 
 protected:
     std::string demangle(const char* funcname) {
         return "";
         // return demangler_.demangle(funcname);
+    }
+
+private:
+    static std::string get_argv0() {
+        std::string argv0;
+        std::ifstream ifs("/proc/self/cmdline");
+        std::getline(ifs, argv0, '\0');
+        return argv0;
+    }
+
+    static std::string read_symlink(const std::string& symlink_path) {
+        std::string path;
+        path.resize(100);
+        for (;;) {
+            ssize_t len = readlink(symlink_path.c_str(), &*path.begin(), path.size());
+            if (len < 0) {
+                return "";
+            }
+            if (static_cast<size_t>(len) == path.size()) {
+                path.resize(path.size() * 2);
+            } else {
+                path.resize(static_cast<std::string::size_type>(len));
+                break;
+            }
+        }
+        return path;
     }
 
 private:

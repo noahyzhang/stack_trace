@@ -54,7 +54,7 @@ public:
     BFDTraceResolver& operator=(BFDTraceResolver&&) = delete;
 
 public:
-    ResolvedTrace resolve(ResolvedTrace trace);
+    ResolvedTrace resolve(ResolvedTrace trace) override;
 
 private:
     bfd_file_object* load_object_with_bfd(const std::string& filename_object);
