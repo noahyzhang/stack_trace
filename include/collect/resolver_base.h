@@ -9,8 +9,8 @@
  * 
  */
 
-#ifndef RESOLVER_BASE_H_
-#define RESOLVER_BASE_H_
+#ifndef COLLECT_RESOLVER_BASE_H_
+#define COLLECT_RESOLVER_BASE_H_
 
 #include <dlfcn.h>
 #include <stddef.h>
@@ -23,108 +23,107 @@
 
 namespace stack_trace {
 
-// class Trace {
+// class ResolvedTrace {
 // public:
-//     Trace() = default;
-//     Trace(void* addr, size_t idx) : addr_(addr), idx_(idx) {}
-//     ~Trace() = default;
-//     Trace(const Trace&) = delete;
-//     Trace& operator=(const Trace&) = delete;
-//     Trace(Trace&& other) {
+//     ResolvedTrace() = default;
+//     ResolvedTrace(void* addr, size_t idx) : addr_(addr), idx_(idx) {}
+//     ~ResolvedTrace() = default;
+//     ResolvedTrace(const ResolvedTrace&) = delete;
+//     ResolvedTrace& operator=(const ResolvedTrace&) = delete;
+//     ResolvedTrace(ResolvedTrace&& other) {
+//         object_filename_.swap(other.object_filename_);
+//         object_function_.swap(other.object_function_);
+//         source_loc_ = std::move(other.source_loc_);
+//         source_loc_vec_.swap(other.source_loc_vec_);
 //         addr_ = other.addr_;
 //         idx_ = other.idx_;
 //     }
-//     Trace& operator=(Trace&& other) {
-//         addr_ = other.addr_;
-//         idx_ = other.idx_;
+//     ResolvedTrace& operator=(ResolvedTrace&& other) {
+//         if (this != &other) {
+//             object_filename_.swap(other.object_filename_);
+//             object_function_.swap(other.object_function_);
+//             source_loc_ = std::move(other.source_loc_);
+//             source_loc_vec_.swap(other.source_loc_vec_);
+//             addr_ = other.addr_;
+//             idx_ = other.idx_;
+//         }
 //     }
 
 // public:
-//     void* get_addr() const {
-//         return addr_;
-//     }
+//     class SourceLoc {
+//     public:
+//         SourceLoc() = default;
+//         ~SourceLoc() = default;
+//         SourceLoc(const SourceLoc& other) {
+//             function_ = other.function_;
+//             filename_ = other.filename_;
+//             line_ = other.line_;
+//             col_ = other.col_;
+//         }
+//         SourceLoc& operator=(const SourceLoc& other) {
+//             function_ = other.function_;
+//             filename_ = other.filename_;
+//             line_ = other.line_;
+//             col_ = other.col_;
+//         }
+//         SourceLoc(SourceLoc&& other) {
+//             function_.swap(other.function_);
+//             filename_.swap(other.filename_);
+//             line_ = other.line_;
+//             col_ = other.col_;
+//         }
+//         SourceLoc& operator=(SourceLoc&& other) {
+//             function_.swap(other.function_);
+//             filename_.swap(other.filename_);
+//             line_ = other.line_;
+//             col_ = other.col_;
+//         }
 
-//     size_t get_idx() const {
-//         return idx_;
-//     }
+//     public:
+//         std::string function_;
+//         std::string filename_;
+//         uint32_t line_{0};
+//         uint32_t col_{0};
+//     };
 
-// private:
+// public:
+//     std::string object_filename_;
+//     std::string object_function_;
+//     SourceLoc source_loc_;
+//     std::vector<SourceLoc> source_loc_vec_;
 //     void* addr_{nullptr};
 //     size_t idx_{0};
 // };
 
-class ResolvedTrace {
-public:
-    ResolvedTrace() = default;
-    ResolvedTrace(void* addr, size_t idx) : addr_(addr), idx_(idx) {}
-    ~ResolvedTrace() = default;
-    ResolvedTrace(const ResolvedTrace&) = delete;
-    ResolvedTrace& operator=(const ResolvedTrace&) = delete;
-    ResolvedTrace(ResolvedTrace&& other) {
-        object_filename_.swap(other.object_filename_);
-        object_function_.swap(other.object_function_);
-        source_loc_ = std::move(other.source_loc_);
-        source_loc_vec_.swap(other.source_loc_vec_);
-        addr_ = other.addr_;
-        idx_ = other.idx_;
-    }
-    ResolvedTrace& operator=(ResolvedTrace&& other) {
-        if (this != &other) {
-            object_filename_.swap(other.object_filename_);
-            object_function_.swap(other.object_function_);
-            source_loc_ = std::move(other.source_loc_);
-            source_loc_vec_.swap(other.source_loc_vec_);
-            addr_ = other.addr_;
-            idx_ = other.idx_;
-        }
-    }
+/**
+ * @brief 原始的栈帧信息
+ * 
+ */
+struct Trace {
+    void* addr_;
+    size_t idx_;
+};
 
-public:
-    class SourceLoc {
-    public:
-        SourceLoc() = default;
-        ~SourceLoc() = default;
-        SourceLoc(const SourceLoc& other) {
-            function_ = other.function_;
-            filename_ = other.filename_;
-            line_ = other.line_;
-            col_ = other.col_;
-        }
-        SourceLoc& operator=(const SourceLoc& other) {
-            function_ = other.function_;
-            filename_ = other.filename_;
-            line_ = other.line_;
-            col_ = other.col_;
-        }
-        SourceLoc(SourceLoc&& other) {
-            function_.swap(other.function_);
-            filename_.swap(other.filename_);
-            line_ = other.line_;
-            col_ = other.col_;
-        }
-        SourceLoc& operator=(SourceLoc&& other) {
-            function_.swap(other.function_);
-            filename_.swap(other.filename_);
-            line_ = other.line_;
-            col_ = other.col_;
-        }
-
-    public:
+/**
+ * @brief 转换后的栈帧信息
+ * 
+ */
+struct ResolvedTrace : public Trace {
+    struct SourceLoc {
         std::string function_;
         std::string filename_;
-        uint32_t line_{0};
-        uint32_t col_{0};
+        uint32_t line_;
+        uint32_t col_;
     };
-
-public:
     std::string object_filename_;
     std::string object_function_;
     SourceLoc source_loc_;
-    std::vector<SourceLoc> source_loc_vec_;
-    void* addr_{nullptr};
-    size_t idx_{0};
 };
 
+/**
+ * @brief 函数栈帧解析的基类
+ * 
+ */
 class TraceResolverImplBase {
 public:
     TraceResolverImplBase() : argv0_(get_argv0()), exec_path_(read_symlink("/proc/self/exe")) {}
@@ -136,15 +135,22 @@ public:
         (void)address_count;
     }
 
+    virtual ResolvedTrace resolve(ResolvedTrace t) {
+        return t;
+    }
+
+public:
     template <class ST>
     void load_stacktrace(const ST& st) {
         load_addresses(st.begin(), static_cast<int>(st.size()));
     }
 
-    virtual ResolvedTrace resolve(ResolvedTrace t) {
-        return t;
-    }
-
+    /**
+     * @brief 返回可执行文件的路径
+     * 
+     * @param dl_info 
+     * @return std::string 
+     */
     std::string resolve_exec_path(Dl_info* dl_info) const {
         if (dl_info->dli_fname == argv0_) {
             dl_info->dli_fname = "/proc/self/exe";
@@ -156,10 +162,15 @@ public:
 
 protected:
     std::string demangle(const char* funcname) {
-        return demangler_.demangle(funcname);
+        return utils::demangle(funcname);
     }
 
 private:
+    /**
+     * @brief 获取当前进程的启动命令
+     * 
+     * @return std::string 
+     */
     static std::string get_argv0() {
         std::string argv0;
         std::ifstream ifs("/proc/self/cmdline");
@@ -167,6 +178,12 @@ private:
         return argv0;
     }
 
+    /**
+     * @brief 获取当前进程的可执行文件路径
+     * 
+     * @param symlink_path 
+     * @return std::string 
+     */
     static std::string read_symlink(const std::string& symlink_path) {
         std::string path;
         path.resize(100);
@@ -186,11 +203,10 @@ private:
     }
 
 private:
-    utils::demangler demangler_;
     std::string argv0_;
     std::string exec_path_;
 };
 
 }  // namespace stack_trace
 
-#endif  // RESOLVER_BASE_H_
+#endif  // COLLECT_RESOLVER_BASE_H_

@@ -9,8 +9,8 @@
  * 
  */
 
-#ifndef TRACE_H_
-#define TRACE_H_
+#ifndef COLLECT_TRACE_H_
+#define COLLECT_TRACE_H_
 
 #include <stddef.h>
 #include <unistd.h>
@@ -68,11 +68,13 @@ public:
     size_t size() const {
         return (stack_trace_vec_.size() > get_skip_count()) ? stack_trace_vec_.size() - get_skip_count() : 0;
     }
-    ResolvedTrace operator[](size_t idx) const {
+    Trace operator[](size_t idx) const {
         if (idx >= size()) {
-            return ResolvedTrace();
+            return Trace();
         }
-        return ResolvedTrace(stack_trace_vec_[idx + get_skip_count()], idx);
+        return Trace{
+            .addr_ = stack_trace_vec_[idx + get_skip_count()],
+            .idx_ = idx};
     }
     void* const* begin() const {
         if (size()) {
@@ -116,4 +118,4 @@ class StackTrace : public StackTraceImpl {};
 
 }  // namespace stack_trace
 
-#endif  // TRACE_H_
+#endif  // COLLECT_TRACE_H_

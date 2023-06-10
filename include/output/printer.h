@@ -46,7 +46,7 @@ public:
      */
     template <typename ST>
     FILE* print(const ST& st, FILE* fp = stderr) {
-        CFileStreamBuf out_buf(fp);
+        utils::CFileStreamBuf out_buf(fp);
         std::ostream os(&out_buf);
         print_stacktrace(st, os);
         return fp;
@@ -117,14 +117,14 @@ private:
             << ", in " << trace.object_function_ << "\n";
             already_indented = false;
         }
-        for (size_t idx = trace.source_loc_vec_.size(); idx > 0; --idx) {
-            if (!already_indented) {
-                os << "   ";
-            }
-            const ResolvedTrace::SourceLoc& source_loc = trace.source_loc_vec_[idx-1];
-            print_source_loc(os, " | ", source_loc);
-            already_indented = false;
-        }
+        // for (size_t idx = trace.source_loc_vec_.size(); idx > 0; --idx) {
+        //     if (!already_indented) {
+        //         os << "   ";
+        //     }
+        //     const ResolvedTrace::SourceLoc& source_loc = trace.source_loc_vec_[idx-1];
+        //     print_source_loc(os, " | ", source_loc);
+        //     already_indented = false;
+        // }
         if (trace.source_loc_.filename_.size()) {
             if (!already_indented) {
                 os << "   ";

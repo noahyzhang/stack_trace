@@ -27,6 +27,10 @@
 
 namespace stack_trace {
 
+/**
+ * @brief 使用 BFD 进行函数解析
+ * 
+ */
 class BFDTraceResolver : public TraceResolverImplBase {
 public:
     typedef utils::handle<bfd *, utils::deleter<bfd_boolean, bfd *, &bfd_close>> bfd_handle_t;
