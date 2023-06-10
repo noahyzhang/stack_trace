@@ -1,6 +1,6 @@
 /**
  * @file utils.h
- * @author your name (you@domain.com)
+ * @author noahyzhang
  * @brief 
  * @version 0.1
  * @date 2023-06-09
@@ -9,11 +9,9 @@
  * 
  */
 
-#ifndef SRC_UTILS_H_
-#define SRC_UTILS_H_
+#ifndef COMMON_UTILS_H_
+#define COMMON_UTILS_H_
 
-#include <cxxabi.h>
-#include <string>
 #include <unordered_map>
 
 namespace stack_trace {
@@ -139,25 +137,7 @@ private:
     bool empty_;
 };
 
-class demangler {
-public:
-
-public:
-    std::string demangle(const char* func_name) {
-        char* result = abi::__cxa_demangle(func_name, demangle_buf_.get(), &demangle_buf_len_, nullptr);
-        if (result) {
-            demangle_buf_.update(result);
-            return result;
-        }
-        return func_name;
-    }
-
-private:
-    handle<char*> demangle_buf_;
-    size_t demangle_buf_len_{0};
-};
-
 }  // namespace utils
 }  // namespace stack_trace
 
-#endif  // SRC_UTILS_H_
+#endif  // COMMON_UTILS_H_

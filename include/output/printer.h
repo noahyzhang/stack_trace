@@ -1,6 +1,6 @@
 /**
  * @file printer.h
- * @author your name (you@domain.com)
+ * @author noahyzhang
  * @brief 
  * @version 0.1
  * @date 2023-06-09
@@ -9,18 +9,22 @@
  * 
  */
 
-#ifndef SRC_PRINTER_H_
-#define SRC_PRINTER_H_
+#ifndef OUTPUT_PRINTER_H_
+#define OUTPUT_PRINTER_H_
 
 #include <stdio.h>
 #include <ostream>
 #include <iomanip>
-#include "resolver.h"
-#include "resolver_base.h"
-#include "file_stream.h"
+#include "collect/resolver.h"
+#include "collect/resolver_base.h"
+#include "common/file_stream.h"
 
 namespace stack_trace {
 
+/**
+ * @brief 输出堆栈信息
+ * 
+ */
 class Printer {
 public:
     Printer() = default;
@@ -32,26 +36,48 @@ public:
     Printer& operator=(Printer&&) = delete;
 
 public:
+    /**
+     * @brief 将堆栈信息输出到文件
+     * 
+     * @tparam ST 
+     * @param st 
+     * @param fp 
+     * @return FILE* 
+     */
     template <typename ST>
-    FILE* print(ST& st, FILE* fp = stderr) {
+    FILE* print(const ST& st, FILE* fp = stderr) {
         CFileStreamBuf out_buf(fp);
         std::ostream os(&out_buf);
         print_stacktrace(st, os);
         return fp;
     }
 
+    /**
+     * @brief 将堆栈信息输出到流
+     * 
+     * @tparam ST 
+     * @param st 
+     * @param os 
+     * @return std::ostream& 
+     */
     template <typename ST>
-    std::ostream& print(ST& st, std::ostream& os) {
+    std::ostream& print(const ST& st, std::ostream& os) {
         print_stacktrace(st, os);
         return os;
     }
 
 private:
+    /**
+     * @brief 输出堆栈信息
+     * 
+     * @tparam ST 
+     * @param st 
+     * @param os 
+     */
     template <typename ST>
-    void print_stacktrace(ST& st, std::ostream& os) {
+    void print_stacktrace(const ST& st, std::ostream& os) {
         print_header(os, st.get_thread_id());
         resolver_.load_stacktrace(st);
-        // std::cout << "ST size: " << st.size() << std::endl;
         if (is_reverse_) {
             for (size_t trace_idx = st.size(); trace_idx > 0; --trace_idx) {
                 print_trace(os, resolver_.resolve(st[trace_idx-1]));
@@ -63,6 +89,12 @@ private:
         }
     }
 
+    /**
+     * @brief 输出堆栈信息的头部
+     * 
+     * @param os 
+     * @param thread_id 
+     */
     void print_header(std::ostream& os, size_t thread_id) {
         os << "Stack trace";
         if (thread_id != 0) {
@@ -71,16 +103,12 @@ private:
         os << ":\n";
     }
 
-    void print_source_loc(std::ostream& os, const char* indent,
-        const ResolvedTrace::SourceLoc& source_loc, void* addr = nullptr) {
-        os << indent << "Source \"" << source_loc.filename_ << "\", line "
-        << source_loc.line_ << ", in " << source_loc.function_;
-        if (is_address_ && addr != nullptr) {
-            os << " [" << addr << "]";
-        }
-        os << "\n";
-    }
-
+    /**
+     * @brief 输出单个的栈帧信息
+     * 
+     * @param os 
+     * @param trace 
+     */
     void print_trace(std::ostream& os, const ResolvedTrace& trace) {
         os << "#" << std::left << std::setw(2) << trace.idx_ << std::right;
         bool already_indented = true;
@@ -95,9 +123,6 @@ private:
             }
             const ResolvedTrace::SourceLoc& source_loc = trace.source_loc_vec_[idx-1];
             print_source_loc(os, " | ", source_loc);
-            // if (is_snippet_) {
-            //     print_snippet(os, "    | ", source_loc, source_loc_context_size);
-            // }
             already_indented = false;
         }
         if (trace.source_loc_.filename_.size()) {
@@ -105,27 +130,38 @@ private:
                 os << "   ";
             }
             print_source_loc(os, "   ", trace.source_loc_, trace.addr_);
-            // if (is_snippet_) {
-            //     print_snippet(os, "      ", trace.source_loc_, trace_context_size);
-            // }
         }
     }
 
-    // void print_snippet(std::ostream& os, const char* indent,
-    //     const ResolvedTrace::SourceLoc& source_loc, int context_size);
+    /**
+     * @brief 输出文件信息
+     * 
+     * @param os 
+     * @param indent 
+     * @param source_loc 
+     * @param addr 
+     */
+    void print_source_loc(std::ostream& os, const char* indent,
+        const ResolvedTrace::SourceLoc& source_loc, void* addr = nullptr) {
+        os << indent << "Source \"" << source_loc.filename_ << "\", line "
+        << source_loc.line_ << ", in " << source_loc.function_;
+        if (is_address_ && addr != nullptr) {
+            os << " [" << addr << "]";
+        }
+        os << "\n";
+    }
 
 private:
+    // 解析栈帧的对象
     TraceResolver resolver_;
-
+    // 是否输出函数地址
     bool is_address_{true};
+    // 是否输出函数所在的 ELF 文件（.so、exe等）
     bool is_object_{true};
+    // 是否反转打印
     bool is_reverse_{true};
-    // bool is_snippet_{true};
-
-    // int source_loc_context_size{5};
-    // int trace_context_size{7};
 };
 
 }  // namespace stack_trace
 
-#endif  // SRC_PRINTER_H_
+#endif  // OUTPUT_PRINTER_H_

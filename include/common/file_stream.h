@@ -9,8 +9,8 @@
  * 
  */
 
-#ifndef SRC_FILE_STREAM_H_
-#define SRC_FILE_STREAM_H_
+#ifndef FILE_STREAM_H_
+#define FILE_STREAM_H_
 
 #include <stdio.h>
 #include <ostream>
@@ -36,4 +36,4 @@ private:
 
 }  // namespace stack_trace
 
-#endif  // SRC_FILE_STREAM_H_
+#endif  // FILE_STREAM_H_

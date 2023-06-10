@@ -1,7 +1,6 @@
 #include <iostream>
 #include <sstream>
-#include "trace.h"
-#include "printer.h"
+#include "stack_trace.h"
 
 using namespace stack_trace;
 

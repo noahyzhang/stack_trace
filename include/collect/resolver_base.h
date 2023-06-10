@@ -9,8 +9,8 @@
  * 
  */
 
-#ifndef SRC_RESOLVER_BASE_H_
-#define SRC_RESOLVER_BASE_H_
+#ifndef RESOLVER_BASE_H_
+#define RESOLVER_BASE_H_
 
 #include <dlfcn.h>
 #include <stddef.h>
@@ -19,7 +19,7 @@
 #include <vector>
 #include <utility>
 #include <fstream>
-#include "utils.h"
+#include "common/utils.h"
 
 namespace stack_trace {
 
@@ -193,4 +193,4 @@ private:
 
 }  // namespace stack_trace
 
-#endif  // SRC_RESOLVER_BASE_H_
+#endif  // RESOLVER_BASE_H_

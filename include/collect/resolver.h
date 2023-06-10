@@ -9,10 +9,10 @@
  * 
  */
 
-#ifndef SRC_RESOLVER_H_
-#define SRC_RESOLVER_H_
+#ifndef RESOLVER_H_
+#define RESOLVER_H_
 
-#include "resolver_bfd.h"
+#include "collect/resolver_bfd.h"
 
 namespace stack_trace {
 
@@ -22,4 +22,4 @@ class TraceResolver : public BFDTraceResolver {
 
 }  // namespace stack_trace
 
-#endif  // SRC_RESOLVER_H_
+#endif  // RESOLVER_H_

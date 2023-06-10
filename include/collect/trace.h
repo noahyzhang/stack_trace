@@ -9,15 +9,15 @@
  * 
  */
 
-#ifndef SRC_TRACE_H_
-#define SRC_TRACE_H_
+#ifndef TRACE_H_
+#define TRACE_H_
 
 #include <stddef.h>
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <execinfo.h>
 #include <vector>
-#include "resolver_base.h"
+#include "collect/resolver_base.h"
 
 namespace stack_trace {
 
@@ -116,4 +116,4 @@ class StackTrace : public StackTraceImpl {};
 
 }  // namespace stack_trace
 
-#endif  // SRC_TRACE_H_
+#endif  // TRACE_H_
