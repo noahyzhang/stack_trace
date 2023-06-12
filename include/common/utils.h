@@ -47,25 +47,31 @@ struct rm_ptr<const T*> {
     typedef const T type;
 };
 
+/**
+ * @brief 对象包装类，保证对象正常销毁
+ * 
+ * @tparam T 
+ * @tparam Deleter 
+ * @tparam void* 
+ * @tparam &::free> 
+ */
 template <typename T, typename Deleter = deleter<void, void*, &::free>>
 class handle {
-private:
-    handle(const handle&) = delete;
-    handle& operator=(const handle&) = delete;
-
 public:
-    ~handle() {
-        if (!empty_) {
-            Deleter()(val_);
-        }
-    }
-
     handle() : val_(), empty_(true) {}
     explicit handle(T val) : val_(val), empty_(false) {
         if (!val_) {
             empty_ = true;
         }
     }
+    ~handle() {
+        if (!empty_) {
+            Deleter()(val_);
+        }
+    }
+
+    handle(const handle&) = delete;
+    handle& operator=(const handle&) = delete;
 
     handle(handle&& other) : empty_(true) {
         this->swap(other);
@@ -75,6 +81,7 @@ public:
         return *this;
     }
 
+public:
     void reset(T new_val) {
         handle tmp(new_val);
         this->swap(tmp);

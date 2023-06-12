@@ -1,6 +1,6 @@
 /**
  * @file resolver_base.h
- * @author your name (you@domain.com)
+ * @author noahyzhang
  * @brief 
  * @version 0.1
  * @date 2023-06-09
@@ -23,85 +23,13 @@
 
 namespace stack_trace {
 
-// class ResolvedTrace {
-// public:
-//     ResolvedTrace() = default;
-//     ResolvedTrace(void* addr, size_t idx) : addr_(addr), idx_(idx) {}
-//     ~ResolvedTrace() = default;
-//     ResolvedTrace(const ResolvedTrace&) = delete;
-//     ResolvedTrace& operator=(const ResolvedTrace&) = delete;
-//     ResolvedTrace(ResolvedTrace&& other) {
-//         object_filename_.swap(other.object_filename_);
-//         object_function_.swap(other.object_function_);
-//         source_loc_ = std::move(other.source_loc_);
-//         source_loc_vec_.swap(other.source_loc_vec_);
-//         addr_ = other.addr_;
-//         idx_ = other.idx_;
-//     }
-//     ResolvedTrace& operator=(ResolvedTrace&& other) {
-//         if (this != &other) {
-//             object_filename_.swap(other.object_filename_);
-//             object_function_.swap(other.object_function_);
-//             source_loc_ = std::move(other.source_loc_);
-//             source_loc_vec_.swap(other.source_loc_vec_);
-//             addr_ = other.addr_;
-//             idx_ = other.idx_;
-//         }
-//     }
-
-// public:
-//     class SourceLoc {
-//     public:
-//         SourceLoc() = default;
-//         ~SourceLoc() = default;
-//         SourceLoc(const SourceLoc& other) {
-//             function_ = other.function_;
-//             filename_ = other.filename_;
-//             line_ = other.line_;
-//             col_ = other.col_;
-//         }
-//         SourceLoc& operator=(const SourceLoc& other) {
-//             function_ = other.function_;
-//             filename_ = other.filename_;
-//             line_ = other.line_;
-//             col_ = other.col_;
-//         }
-//         SourceLoc(SourceLoc&& other) {
-//             function_.swap(other.function_);
-//             filename_.swap(other.filename_);
-//             line_ = other.line_;
-//             col_ = other.col_;
-//         }
-//         SourceLoc& operator=(SourceLoc&& other) {
-//             function_.swap(other.function_);
-//             filename_.swap(other.filename_);
-//             line_ = other.line_;
-//             col_ = other.col_;
-//         }
-
-//     public:
-//         std::string function_;
-//         std::string filename_;
-//         uint32_t line_{0};
-//         uint32_t col_{0};
-//     };
-
-// public:
-//     std::string object_filename_;
-//     std::string object_function_;
-//     SourceLoc source_loc_;
-//     std::vector<SourceLoc> source_loc_vec_;
-//     void* addr_{nullptr};
-//     size_t idx_{0};
-// };
-
 /**
  * @brief 原始的栈帧信息
  * 
  */
 struct Trace {
-    void* addr_;
-    size_t idx_;
+    void* addr_{nullptr};
+    size_t idx_{0};
 };
 
 /**
@@ -112,8 +40,8 @@ struct ResolvedTrace : public Trace {
     struct SourceLoc {
         std::string function_;
         std::string filename_;
-        uint32_t line_;
-        uint32_t col_;
+        uint32_t line_{0};
+        uint32_t col_{0};
     };
     std::string object_filename_;
     std::string object_function_;
@@ -135,14 +63,20 @@ public:
         (void)address_count;
     }
 
-    virtual ResolvedTrace resolve(ResolvedTrace t) {
-        return t;
+    /**
+     * @brief 解析函数栈帧
+     * 
+     * @param t 
+     * @return ResolvedTrace 
+     */
+    virtual ResolvedTrace resolve(const Trace&) {
+        return ResolvedTrace();
     }
 
 public:
     template <class ST>
     void load_stacktrace(const ST& st) {
-        load_addresses(st.begin(), static_cast<int>(st.size()));
+        load_addresses(st.begin(), static_cast<int>(st.get_size()));
     }
 
     /**
@@ -161,6 +95,12 @@ public:
     }
 
 protected:
+    /**
+     * @brief 解析符号名
+     * 
+     * @param funcname 
+     * @return std::string 
+     */
     std::string demangle(const char* funcname) {
         return utils::demangle(funcname);
     }

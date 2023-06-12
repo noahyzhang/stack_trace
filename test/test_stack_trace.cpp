@@ -5,8 +5,8 @@
 using namespace stack_trace;
 
 void collect_trace() {
-    StackTrace st;
-    st.load_here(32);
+    StackTraceManager st;
+    st.load_trace(32);
 
     Printer p;
     std::ostringstream oss;

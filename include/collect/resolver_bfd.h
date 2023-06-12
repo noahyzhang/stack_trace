@@ -1,6 +1,6 @@
 /**
  * @file resolver_bfd.h
- * @author your name (you@domain.com)
+ * @author noahyzhang
  * @brief 
  * @version 0.1
  * @date 2023-06-09
@@ -9,8 +9,8 @@
  * 
  */
 
-#ifndef RESOLVER_BFD_H_
-#define RESOLVER_BFD_H_
+#ifndef COLLECT_RESOLVER_BFD_H_
+#define COLLECT_RESOLVER_BFD_H_
 
 #include <dlfcn.h>
 #include <bfd.h>
@@ -33,7 +33,7 @@ namespace stack_trace {
  */
 class BFDTraceResolver : public TraceResolverImplBase {
 public:
-    typedef utils::handle<bfd *, utils::deleter<bfd_boolean, bfd *, &bfd_close>> bfd_handle_t;
+    typedef utils::handle<bfd *, utils::deleter<bfd_boolean, bfd*, &bfd_close>> bfd_handle_t;
     typedef utils::handle<asymbol **> bfd_symtab_t;
     struct bfd_file_object {
         bfd_handle_t handle;
@@ -64,35 +64,35 @@ public:
     BFDTraceResolver& operator=(BFDTraceResolver&&) = delete;
 
 public:
-    ResolvedTrace resolve(ResolvedTrace trace) override {
-        // std::cout << "old trace: " << std::endl;
-        // print_strace(trace);
-
+    ResolvedTrace resolve(const Trace& trace) override {
+        ResolvedTrace resolved_trace;
+        resolved_trace.addr_ = trace.addr_;
+        resolved_trace.idx_ = trace.idx_;
         Dl_info symbol_info;
         if (!dladdr(trace.addr_, &symbol_info)) {
-            return trace;
+            return resolved_trace;
         }
         if (symbol_info.dli_sname) {
-            trace.object_function_ = demangle(symbol_info.dli_sname);
+            resolved_trace.object_function_ = demangle(symbol_info.dli_sname);
         }
         if (!symbol_info.dli_fname) {
-            return trace;
+            return resolved_trace;
         }
-        trace.object_filename_ = resolve_exec_path(&symbol_info);
+        resolved_trace.object_filename_ = resolve_exec_path(&symbol_info);
         bfd_file_object* file_obj;
         struct stat obj_stat;
         struct stat dli_stat;
-        if (stat(trace.object_filename_.c_str(), &obj_stat) == 0
+        if (stat(resolved_trace.object_filename_.c_str(), &obj_stat) == 0
             && stat(symbol_info.dli_fname, &dli_stat) == 0
             && obj_stat.st_ino == dli_stat.st_ino) {
-            file_obj = load_object_with_bfd(trace.object_filename_);
+            file_obj = load_object_with_bfd(resolved_trace.object_filename_);
         } else {
             file_obj = nullptr;
         }
         if (file_obj == nullptr || !file_obj->handle) {
             file_obj = load_object_with_bfd(symbol_info.dli_fname);
             if (!file_obj->handle) {
-                return trace;
+                return resolved_trace;
             }
         }
         find_sym_result* details_selected;
@@ -100,35 +100,37 @@ public:
         details_selected = &details_call_site;
 
         find_sym_result details_adjusted_call_site = find_symbol_details(
-            file_obj, (void*)(uintptr_t(trace.addr_)-1), symbol_info.dli_fbase);
+            file_obj, reinterpret_cast<void*>(uintptr_t(trace.addr_)-1), symbol_info.dli_fbase);
         if (details_call_site.found && details_adjusted_call_site.found) {
             details_selected = &details_adjusted_call_site;
-            trace.addr_ = (void*)(uintptr_t(trace.addr_)-1);
+            resolved_trace.addr_ = reinterpret_cast<void*>(uintptr_t(trace.addr_)-1);
         }
         if (details_selected == &details_call_site && details_call_site.found) {
-            details_call_site = find_symbol_details(file_obj, trace.addr_, symbol_info.dli_fbase);
+            details_call_site = find_symbol_details(file_obj, resolved_trace.addr_, symbol_info.dli_fbase);
         }
 
         if (details_selected->found) {
             if (details_selected->filename) {
-                trace.source_loc_.filename_ = details_selected->filename;
+                resolved_trace.source_loc_.filename_ = details_selected->filename;
             }
-            trace.source_loc_.line_ = details_selected->line;
+            resolved_trace.source_loc_.line_ = details_selected->line;
             if (details_selected->funcname) {
-                trace.source_loc_.function_ = demangle(details_selected->funcname);
+                resolved_trace.source_loc_.function_ = demangle(details_selected->funcname);
                 if (!symbol_info.dli_sname) {
-                    trace.object_function_ = trace.source_loc_.function_;
+                    resolved_trace.object_function_ = resolved_trace.source_loc_.function_;
                 }
             }
-            trace.source_loc_vec_ = get_backtrace_source_loc_vec(file_obj, *details_selected);
         }
-
-        // std::cout << "new trace: " << std::endl;
-        // print_strace(trace);
-        return trace;
+        return resolved_trace;
     }
 
 private:
+    /**
+     * @brief 获取符号所在文件信息
+     * 
+     * @param filename_object 
+     * @return bfd_file_object* 
+     */
     bfd_file_object* load_object_with_bfd(const std::string& filename_object) {
         if (!is_bfd_loaded_) {
             bfd_init();
@@ -180,6 +182,14 @@ private:
         return r;
     }
 
+    /**
+     * @brief 获取符号信息
+     * 
+     * @param file_obj 
+     * @param addr 
+     * @param base_addr 
+     * @return find_sym_result 
+     */
     find_sym_result find_symbol_details(bfd_file_object* file_obj, void* addr, void* base_addr) {
         find_sym_context context;
         context.self = this;
@@ -191,6 +201,15 @@ private:
         return context.result;
     }
 
+    /**
+     * @brief 
+     * 
+     * @param addr 在段中寻找符号信息
+     * @param base_addr 
+     * @param file_obj 
+     * @param section 
+     * @param result 
+     */
     void find_in_section(bfd_vma addr, bfd_vma base_addr, bfd_file_object* file_obj,
         asection* section, find_sym_result* result) {
         if (result->found) {
@@ -218,28 +237,6 @@ private:
                 addr - sec_addr, &result->filename, &result->funcname, &result->line);
         }
     }
-    std::vector<ResolvedTrace::SourceLoc> get_backtrace_source_loc_vec(
-        bfd_file_object* file_obj, find_sym_result previous_result) {
-        std::vector<ResolvedTrace::SourceLoc> results;
-        while (previous_result.found) {
-            find_sym_result result;
-            result.found = bfd_find_inliner_info(file_obj->handle.get(), &result.filename,
-                                            &result.funcname, &result.line);
-            if (result.found) {
-                ResolvedTrace::SourceLoc src_loc;
-                src_loc.line_ = result.line;
-                if (result.filename) {
-                    src_loc.filename_ = result.filename;
-                }
-                if (result.funcname) {
-                    src_loc.function_ = demangle(result.funcname);
-                }
-                results.push_back(src_loc);
-            }
-            previous_result = result;
-        }
-        return results;
-    }
 
 private:
     static void find_in_section_trampoline(bfd*, asection* section, void* data) {
@@ -250,15 +247,16 @@ private:
             &context->result);
     }
 
+    /**
+     * @brief 打印，用于调试
+     * 
+     * @param trace 
+     */
     static void print_strace(const ResolvedTrace& trace) {
         std::cout << "trace: " << " addr: " << trace.addr_ << ", idx: " << trace.idx_
             << ", obj_filename: " << trace.object_filename_ << ", obj_function: " << trace.object_function_
             << ",  outer source loc: " << trace.source_loc_.filename_ << " " << trace.source_loc_.function_ << " "
             << trace.source_loc_.col_ << " " << trace.source_loc_.line_ << std::endl;
-        for (const auto& x : trace.source_loc_vec_) {
-            std::cout << "inner source loc: " << x.filename_ << " "
-                << x.function_ << " " << x.col_ << " " << x.line_ << std::endl;
-        }
         std::cout << std::endl;
     }
 
@@ -269,4 +267,4 @@ private:
 
 }  // namespace stack_trace
 
-#endif  // RESOLVER_BFD_H_
+#endif  // COLLECT_RESOLVER_BFD_H_

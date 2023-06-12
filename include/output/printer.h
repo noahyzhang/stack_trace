@@ -79,11 +79,11 @@ private:
         print_header(os, st.get_thread_id());
         resolver_.load_stacktrace(st);
         if (is_reverse_) {
-            for (size_t trace_idx = st.size(); trace_idx > 0; --trace_idx) {
+            for (size_t trace_idx = st.get_size(); trace_idx > 0; --trace_idx) {
                 print_trace(os, resolver_.resolve(st[trace_idx-1]));
             }
         } else {
-            for (size_t trace_idx = 0; trace_idx < st.size(); ++trace_idx) {
+            for (size_t trace_idx = 0; trace_idx < st.get_size(); ++trace_idx) {
                 print_trace(os, resolver_.resolve(st[trace_idx]));
             }
         }
@@ -117,14 +117,6 @@ private:
             << ", in " << trace.object_function_ << "\n";
             already_indented = false;
         }
-        // for (size_t idx = trace.source_loc_vec_.size(); idx > 0; --idx) {
-        //     if (!already_indented) {
-        //         os << "   ";
-        //     }
-        //     const ResolvedTrace::SourceLoc& source_loc = trace.source_loc_vec_[idx-1];
-        //     print_source_loc(os, " | ", source_loc);
-        //     already_indented = false;
-        // }
         if (trace.source_loc_.filename_.size()) {
             if (!already_indented) {
                 os << "   ";
@@ -159,7 +151,7 @@ private:
     // 是否输出函数所在的 ELF 文件（.so、exe等）
     bool is_object_{true};
     // 是否反转打印
-    bool is_reverse_{true};
+    bool is_reverse_{false};
 };
 
 }  // namespace stack_trace

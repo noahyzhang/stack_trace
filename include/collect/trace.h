@@ -1,6 +1,6 @@
 /**
  * @file trace.h
- * @author your name (you@domain.com)
+ * @author noahyzhang
  * @brief 
  * @version 0.1
  * @date 2023-06-09
@@ -21,79 +21,27 @@
 
 namespace stack_trace {
 
-class StackTraceImplBase {
+/**
+ * @brief 栈帧地址管理
+ * 
+ */
+class StackTraceManager {
 public:
-    StackTraceImplBase() = default;
-    ~StackTraceImplBase() = default;
-    StackTraceImplBase(const StackTraceImplBase&) = delete;
-    StackTraceImplBase& operator=(const StackTraceImplBase&) = delete;
-    StackTraceImplBase(StackTraceImplBase&&) = delete;
-    StackTraceImplBase& operator=(StackTraceImplBase&&) = delete;
+    StackTraceManager() = default;
+    ~StackTraceManager() = default;
+    StackTraceManager(const StackTraceManager&) = delete;
+    StackTraceManager& operator=(const StackTraceManager&) = delete;
+    StackTraceManager(StackTraceManager&&) = delete;
+    StackTraceManager& operator=(StackTraceManager&&) = delete;
 
 public:
-    void reset_thread_id() {
-        thread_id_ = syscall(SYS_gettid);
-    }
-    size_t get_thread_id() const {
-        return thread_id_;
-    }
-    void set_skip_count(size_t count) {
-        skip_ = count;
-    }
-    size_t get_skip_count() const {
-        return skip_;
-    }
-    void set_context(void* context) {
-        context_ = context;
-    }
-    void* get_context() const {
-        return context_;
-    }
-    void set_err_addr(void* err_addr) {
-        err_addr_ = err_addr;
-    }
-    void* get_err_addr() const {
-        return err_addr_;
-    }
-
-private:
-    size_t thread_id_{0};
-    size_t skip_{0};
-    void* context_{nullptr};
-    void* err_addr_{nullptr};
-};
-
-class StackTraceImplHolder : public StackTraceImplBase {
-public:
-    size_t size() const {
-        return (stack_trace_vec_.size() > get_skip_count()) ? stack_trace_vec_.size() - get_skip_count() : 0;
-    }
-    Trace operator[](size_t idx) const {
-        if (idx >= size()) {
-            return Trace();
-        }
-        return Trace{
-            .addr_ = stack_trace_vec_[idx + get_skip_count()],
-            .idx_ = idx};
-    }
-    void* const* begin() const {
-        if (size()) {
-            return &stack_trace_vec_[get_skip_count()];
-        }
-        return nullptr;
-    }
-
-public:
-    std::vector<void*> stack_trace_vec_;
-};
-
-class StackTraceImpl : public StackTraceImplHolder {
-public:
+    /**
+     * @brief 加载栈帧地址
+     * 
+     */
     __attribute__((noinline))
-    size_t load_here(size_t depth = 32, void* context = nullptr, void* err_addr = nullptr) {
+    size_t load_trace(size_t depth = 32) {
         reset_thread_id();
-        set_context(context);
-        set_err_addr(err_addr);
         if (depth == 0) {
             return 0;
         }
@@ -101,20 +49,87 @@ public:
         size_t trace_cnt = backtrace(&stack_trace_vec_[0], stack_trace_vec_.size());
         stack_trace_vec_.resize(trace_cnt);
         set_skip_count(1);
-
-        // std::cout << "stack_trace_vec, size: " <<  stack_trace_vec_.size() << std::endl;
-        // int count = 0;
-        // for (const auto& x : stack_trace_vec_) {
-        //     std::cout << "#" << count++ << "  " << x << std::endl;
-        // }
-        // std::cout << "stack_trace size: " << size() << std::endl;
-        // std::cout << std::endl;
-
-        return size();
+        return get_size();
     }
-};
 
-class StackTrace : public StackTraceImpl {};
+    /**
+     * @brief 栈帧地址的数量
+     * 
+     * @return size_t 
+     */
+    size_t get_size() const {
+        return (stack_trace_vec_.size() > get_skip_count()) ? stack_trace_vec_.size() - get_skip_count() : 0;
+    }
+
+    /**
+     * @brief 重载运算符
+     * 
+     * @param idx 
+     * @return Trace 
+     */
+    Trace operator[](size_t idx) const {
+        if (idx >= get_size()) {
+            return Trace();
+        }
+        Trace res;
+        res.addr_ = stack_trace_vec_[idx + get_skip_count()];
+        res.idx_ = idx;
+        return res;
+    }
+
+    /**
+     * @brief 重写 begin 函数
+     * 
+     * @return void* const* 
+     */
+    void* const* begin() const {
+        if (get_size()) {
+            return &stack_trace_vec_[get_skip_count()];
+        }
+        return nullptr;
+    }
+
+    /**
+     * @brief 设置要跳过几个栈帧
+     * 
+     * @param count 
+     */
+    void set_skip_count(size_t count) {
+        skip_ = count;
+    }
+
+    /**
+     * @brief 获取跳过的栈帧个数
+     * 
+     * @return size_t 
+     */
+    size_t get_skip_count() const {
+        return skip_;
+    }
+
+    /**
+     * @brief 获取线程 ID
+     * 
+     * @return size_t 
+     */
+    size_t get_thread_id() const {
+        return thread_id_;
+    }
+
+private:
+    /**
+     * @brief 设置线程 ID
+     * 
+     */
+    void reset_thread_id() {
+        thread_id_ = syscall(SYS_gettid);
+    }
+
+private:
+    size_t thread_id_{0};
+    size_t skip_{0};
+    std::vector<void*> stack_trace_vec_;
+};
 
 }  // namespace stack_trace
 
