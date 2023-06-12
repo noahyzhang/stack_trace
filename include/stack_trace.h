@@ -12,7 +12,7 @@
 #ifndef STACK_TRACE_H_
 #define STACK_TRACE_H_
 
-#include "output/printer.h"
+#include "printer/printer.h"
 #include "collect/trace.h"
 
 #endif  // STACK_TRACE_H_

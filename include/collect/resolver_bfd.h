@@ -12,8 +12,16 @@
 #ifndef COLLECT_RESOLVER_BFD_H_
 #define COLLECT_RESOLVER_BFD_H_
 
-#include <dlfcn.h>
+// bfd 头文件需要这两个宏
+#ifndef PACKAGE
+#define PACKAGE
+#endif
+#ifndef PACKAGE_VERSION
+#define PACKAGE_VERSION
+#endif
 #include <bfd.h>
+
+#include <dlfcn.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
